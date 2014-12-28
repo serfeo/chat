@@ -1,0 +1,52 @@
+<html ng-app='chat'>
+<head>
+    <title>Chat</title>
+
+    <!-- angular modules -->
+    <script src='lib/angular/angular.js'></script>
+    <script src='lib/angular-cookies/angular-cookies.js'></script>
+    <script src='lib/angular-ui-router/angular-ui-router.js'></script>
+
+    <!-- bootstrap modules -->
+    <script src='lib/angular-bootstrap/ui-bootstrap-tpls.js'></script>
+    <link rel='stylesheet' type='text/css' href='lib/bootstrap-css-only/css/bootstrap.css'>
+
+    <!-- angular application -->
+    <script src='app.js'></script>
+
+    <link rel='stylesheet' type='text/css' href='css/main.css'>
+</head>
+<body>
+    <div class='body'>
+        <div class='navbar navbar-default' role='navigation'>
+            <div class='container-fluid'></div>
+        </div>
+        <div class='col-xs-4' ng-controller='ChatController'>
+            <div class='panel panel-default'>
+                <div class='panel-body'>
+                    <div ng-repeat='message in history'>
+                        <span>[ {{message.from}}</span>
+                        <span ng-show='message.to'>to {{message.to}}</span>
+                        <span>]</span>
+                        <span>{{message.text}}</span>
+                    </div>
+                </div>
+                <div class='panel-footer'>
+                    <div class='row'>
+                        <div class='col-lg-6'>
+                            <div class='input-group'>
+                                <input ng-model='message' type='text' class='form-control' placeholder='Message'>
+                        <span class='input-group-btn'>
+                            <button class='btn btn-default' type='button' ng-click='sendMessage()'>
+                                <span class='glyphicon glyphicon-send'></span> Send
+                            </button>
+                        </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
