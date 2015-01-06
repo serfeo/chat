@@ -4,6 +4,9 @@ client/bower_components
 client/app/lib
 client/lib
 
+# server part
+server/target
+
 # idea
 .idea
 *.iml

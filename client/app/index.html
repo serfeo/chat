@@ -34,13 +34,21 @@
                 <div class='panel-footer'>
                     <div class='row'>
                         <div class='col-lg-6'>
-                            <div class='input-group'>
+                            <div class='input-group' ng-show="isAuthenticated">
                                 <input ng-model='message' type='text' class='form-control' placeholder='Message'>
-                        <span class='input-group-btn'>
-                            <button class='btn btn-default' type='button' ng-click='sendMessage()'>
-                                <span class='glyphicon glyphicon-send'></span> Send
-                            </button>
-                        </span>
+                                <span class='input-group-btn'>
+                                    <button class='btn btn-default' type='button' ng-click='sendMessage()'>
+                                        <span class='glyphicon glyphicon-send'></span> Send
+                                    </button>
+                                </span>
+                            </div>
+                            <div class='input-group' ng-show="!isAuthenticated">
+                                <input ng-model='login' type='text' class='form-control' placeholder='Login'>
+                                <span class='input-group-btn'>
+                                    <button class='btn btn-default' type='button' ng-click='loginHandler()'>
+                                        <span class='glyphicon glyphicon-user'></span> Login
+                                    </button>
+                                </span>
                             </div>
                         </div>
                     </div>
