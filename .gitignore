@@ -6,6 +6,8 @@ client/lib
 
 # server part
 server/target
+server/lib
+server/project
 
 # idea
 .idea
