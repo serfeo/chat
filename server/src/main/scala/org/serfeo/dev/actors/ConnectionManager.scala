@@ -19,7 +19,11 @@ class ConnectionManager extends Actor {
 
     def receive = {
         case m: OpenConnection => connectionPool += ( m.socket -> m.login )
-        case m: CloseConnection => connectionPool -= m.socket
-        case m: GetConnectionsExclude => sender ! ( connectionPool.filter( !_._2.equals( m.login ) ).keys )
+        case m: CloseConnection => {
+            val login = connectionPool.getOrElse( m.socket, "" )
+            connectionPool -= m.socket
+            sender ! login
+        }
+        case m: GetConnectionsExclude => sender ! ( connectionPool.filter( !_._2.equals( m.login ) ) )
     }
 }

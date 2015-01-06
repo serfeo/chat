@@ -24,29 +24,46 @@ class ChatActor extends Actor {
     import org.serfeo.dev.actors.ChatActor.ChatMessageJsonFormat._
     import org.serfeo.dev.actors.ConnectionManager.{OpenConnection,CloseConnection,GetConnectionsExclude}
     import org.serfeo.dev.ReactiveServer.{Close, Message,Open}
+    import org.serfeo.dev.actors.SendActor.{BroadcastExitMessage, BroadcastWelcomeMessage, BroadcastMessage}
 
     var connectionActor: ActorRef = _
+    var sendActor: ActorRef = _
     var logActor: ActorRef = _
+
     implicit val timeout = Timeout( 15 seconds )
 
     override def preStart(): Unit = {
         connectionActor = context.actorOf( Props[ ConnectionManager ], "connections" )
+        sendActor = context.actorOf( Props[ SendActor ], "send" )
         logActor = context.actorOf( Props[ LogActor ], "logging" )
     }
 
     def receive = {
-        case m: Close => connectionActor ! CloseConnection( m.ws )
+        case m: Close => {
+            for { login <- ask( connectionActor, CloseConnection( m.ws ) ).mapTo[ String ]
+                  connections <- ask( connectionActor, GetConnectionsExclude( login ) ).mapTo[ Iterable[ ( WebSocket, String ) ] ] } {
+                sendActor ! BroadcastExitMessage( login, connections )
+            }
+        }
         case m: Open => connectionActor ! OpenConnection( m.ws, "" )
         case m: Message => {
             val message = JsonParser( m.msg ).convertTo[ ChatMessage ]
             logActor ! message
 
             message match {
-                case ChatMessage( "login", body ) => connectionActor ! OpenConnection( m.ws, body.from )
-                case ChatMessage( "logout", body ) => connectionActor ! CloseConnection( m.ws )
+                case ChatMessage( "login", body ) => {
+                    connectionActor ! OpenConnection( m.ws, body.from )
+                    for ( connections <- ask( connectionActor, GetConnectionsExclude( body.from ) ).mapTo[ Iterable[ ( WebSocket, String ) ] ] )
+                        sendActor ! BroadcastWelcomeMessage( body.from, connections )
+                }
+                case ChatMessage( "logout", body ) => {
+                    connectionActor ! CloseConnection( m.ws )
+                    for ( connections <- ask( connectionActor, GetConnectionsExclude( body.from ) ).mapTo[ Iterable[ ( WebSocket, String ) ] ] )
+                        sendActor ! BroadcastExitMessage( body.from, connections )
+                }
                 case ChatMessage( "message", body ) => {
-                    for( future <- ask( connectionActor, GetConnectionsExclude( body.from ) ).mapTo[ Iterable[ WebSocket ] ] )
-                        for ( socket <- future ) socket.send( m.msg );
+                    for( connections <- ask( connectionActor, GetConnectionsExclude( body.from ) ).mapTo[ Iterable[ ( WebSocket, String ) ] ] )
+                        sendActor ! BroadcastMessage( m.msg, connections )
                 }
 
                 case _ => println( "Unknown message format: " + message )

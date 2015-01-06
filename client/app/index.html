@@ -13,48 +13,59 @@
 
     <!-- angular application -->
     <script src='app.js'></script>
+    <script src='directive/common.js'></script>
 
     <link rel='stylesheet' type='text/css' href='css/main.css'>
 </head>
-<body>
-    <div class='body'>
-        <div class='navbar navbar-default' role='navigation'>
-            <div class='container-fluid'></div>
-        </div>
-        <div class='col-xs-4' ng-controller='ChatController'>
-            <div class='panel panel-default'>
-                <div class='panel-body'>
-                    <div ng-repeat='message in history'>
-                        <span>[ {{message.from}}</span>
-                        <span ng-show='message.to'>to {{message.to}}</span>
-                        <span>]</span>
-                        <span>{{message.text}}</span>
+<body ng-controller='ChatController'>
+    <table class='body'>
+        <tbody>
+            <tr class='header'>
+                <td colspan='2'>
+                    HEADER
+                </td>
+            <tr class='chat'>
+                <td>
+                    <div class='body'>
+                        <div class='message' ng-repeat='message in history'>
+                            <span>[ {{message.from}}</span>
+                            <span ng-show='message.to'>to {{message.to}}</span>
+                            <span>]</span>
+                            <span>{{message.text}}</span>
+                        </div>
                     </div>
-                </div>
-                <div class='panel-footer'>
-                    <div class='row'>
-                        <div class='col-lg-6'>
-                            <div class='input-group' ng-show="isAuthenticated">
-                                <input ng-model='message' type='text' class='form-control' placeholder='Message'>
-                                <span class='input-group-btn'>
-                                    <button class='btn btn-default' type='button' ng-click='sendMessage()'>
+                <td class='users'>
+
+                </td>
+            <tr class='footer'>
+                <td colspan='2'>
+                    <table class="message-panel">
+                        <tbody>
+                            <tr ng-show="isAuthenticated">
+                                <td>
+                                    <input ng-model='message' ng-enter='sendMessage()' type='text' class='form-control' placeholder='Message'>
+                                </td>
+                                <td class='send'>
+                                    <button class='btn btn-default' type='button' ng-enter ng-click='sendMessage()'>
                                         <span class='glyphicon glyphicon-send'></span> Send
                                     </button>
-                                </span>
-                            </div>
-                            <div class='input-group' ng-show="!isAuthenticated">
-                                <input ng-model='login' type='text' class='form-control' placeholder='Login'>
-                                <span class='input-group-btn'>
+                                </td>
+                            </tr>
+                            <tr ng-show="!isAuthenticated">
+                                <td>
+                                    <input ng-model='login' ng-enter='loginHandler()' type='text' class='form-control' placeholder='Login'>
+                                </td>
+                                <td class='send'>
                                     <button class='btn btn-default' type='button' ng-click='loginHandler()'>
                                         <span class='glyphicon glyphicon-user'></span> Login
                                     </button>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 </body>
 </html>

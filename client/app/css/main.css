@@ -1,3 +1,61 @@
+* {
+    font-size: 14px;
+    font-family: "Helvetica Neue", "Helvetica, Arial", "sans-serif";
+}
+
+html, body {
+    height: 100%;
+}
+
 .body {
     height: 100%;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.body td {
+    border: 1px solid #ccc;
+}
+
+.header {
+    height: 30px;
+}
+
+.header td, .footer td {
+    padding: 20px;
+}
+
+.footer {
+    height: 30px;
+}
+
+.chat {
+    vertical-align: top;
+}
+
+.message-panel {
+    width: 100%;
+}
+
+.message-panel td{
+    border-collapse: collapse;
+    padding: 0px;
+    border: none;
+}
+
+.message-panel .send {
+    width: 50px;
+}
+
+.chat .body {
+    height: 100%;
+    overflow: auto;
+}
+
+.chat .body .message {
+    padding: 10px 10px 0px 10px;
+}
+
+.users {
+    width: 300px;
 }
