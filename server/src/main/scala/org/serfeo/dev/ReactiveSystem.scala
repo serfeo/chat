@@ -1,6 +1,7 @@
-package reactive
+package org.serfeo.dev
 
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ActorSystem, Props}
+import org.serfeo.dev.actors.ChatActor
 
 object ReactiveSystem extends App {
     implicit lazy val system = ActorSystem( "chat" )
