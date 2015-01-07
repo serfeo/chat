@@ -4,7 +4,7 @@ import scala.collection.mutable.Map
 
 import akka.actor.Actor
 import org.java_websocket.WebSocket
-import org.serfeo.dev.actors.ConnectionManager.{GetConnectionsExclude, CloseConnection, OpenConnection}
+import org.serfeo.dev.actors.ConnectionManager.{GetUserConnection, GetConnectionsExclude, CloseConnection, OpenConnection}
 
 object ConnectionManager {
     sealed trait ConnectionEvent
@@ -12,6 +12,7 @@ object ConnectionManager {
     case class OpenConnection( socket: WebSocket, login: String ) extends ConnectionEvent
     case class CloseConnection( socket: WebSocket ) extends ConnectionEvent
     case class GetConnectionsExclude( login: String ) extends ConnectionEvent
+    case class GetUserConnection( login: String ) extends ConnectionEvent
 }
 
 class ConnectionManager extends Actor {
@@ -25,5 +26,6 @@ class ConnectionManager extends Actor {
             sender ! login
         }
         case m: GetConnectionsExclude => sender ! ( connectionPool.filter( !_._2.equals( m.login ) ) )
+        case m: GetUserConnection => sender ! ( connectionPool.filter( _._2.equals( m.login ) ).map( _._1 ) )
     }
 }

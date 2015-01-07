@@ -10,21 +10,25 @@ import spray.json._
 import scala.concurrent.duration._
 
 object ChatActor {
-    case class MessageBody( to: String, from: String, text: String )
-    case class ChatMessage( action: String, body: MessageBody )
+    case class TypeMessage( action: String )
+    case class ChatMessage( action: String, to: String, from: String, text: String )
+    case class SystemMessage( action: String, value: String )
+    case class SystemListMessage( action: String, value: Iterable[ String ] )
 
     object ChatMessageJsonFormat extends DefaultJsonProtocol {
-        implicit val messageBodyFormat = jsonFormat(MessageBody, "to", "from", "text")
-        implicit val chatMessageFormat = jsonFormat(ChatMessage, "action", "body")
+        implicit val typeMessageFormat = jsonFormat(TypeMessage, "action")
+        implicit val chatMessageFormat = jsonFormat(ChatMessage, "action", "to", "from", "text")
+        implicit val systemMessageFormat = jsonFormat(SystemMessage, "action", "value")
+        implicit val systemListMessageFormat = jsonFormat(SystemListMessage, "action", "value")
     }
 }
 
 class ChatActor extends Actor {
-    import org.serfeo.dev.actors.ChatActor.ChatMessage
+    import org.serfeo.dev.actors.ChatActor.{TypeMessage,ChatMessage,SystemMessage}
     import org.serfeo.dev.actors.ChatActor.ChatMessageJsonFormat._
-    import org.serfeo.dev.actors.ConnectionManager.{OpenConnection,CloseConnection,GetConnectionsExclude}
+    import org.serfeo.dev.actors.ConnectionManager.{OpenConnection,CloseConnection,GetConnectionsExclude,GetUserConnection}
     import org.serfeo.dev.ReactiveServer.{Close, Message,Open}
-    import org.serfeo.dev.actors.SendActor.{BroadcastExitMessage, BroadcastWelcomeMessage, BroadcastMessage}
+    import org.serfeo.dev.actors.SendActor.{BroadcastExitMessage, BroadcastWelcomeMessage, BroadcastMessage, SendUserList}
 
     var connectionActor: ActorRef = _
     var sendActor: ActorRef = _
@@ -47,29 +51,42 @@ class ChatActor extends Actor {
         }
         case m: Open => connectionActor ! OpenConnection( m.ws, "" )
         case m: Message => {
-            val message = JsonParser( m.msg ).convertTo[ ChatMessage ]
-            logActor ! message
-
-            message match {
-                case ChatMessage( "login", body ) => {
-                    connectionActor ! OpenConnection( m.ws, body.from )
-                    for ( connections <- ask( connectionActor, GetConnectionsExclude( body.from ) ).mapTo[ Iterable[ ( WebSocket, String ) ] ] )
-                        sendActor ! BroadcastWelcomeMessage( body.from, connections )
-                }
-                case ChatMessage( "logout", body ) => {
-                    connectionActor ! CloseConnection( m.ws )
-                    for ( connections <- ask( connectionActor, GetConnectionsExclude( body.from ) ).mapTo[ Iterable[ ( WebSocket, String ) ] ] )
-                        sendActor ! BroadcastExitMessage( body.from, connections )
-                }
-                case ChatMessage( "message", body ) => {
-                    for( connections <- ask( connectionActor, GetConnectionsExclude( body.from ) ).mapTo[ Iterable[ ( WebSocket, String ) ] ] )
-                        sendActor ! BroadcastMessage( m.msg, connections )
-                }
-
-                case _ => println( "Unknown message format: " + message )
+            JsonParser( m.msg ).convertTo[ TypeMessage ] match {
+                case TypeMessage( "message" ) => handleChatMessage( JsonParser( m.msg ).convertTo[ ChatMessage ] );
+                case _ => handleSystemMessage( JsonParser( m.msg ).convertTo[ SystemMessage ], m.ws )
             }
-
         }
         case _ => println( "Unknown message format:" )
+    }
+
+    def handleChatMessage( message: ChatMessage ) = message match {
+        case ChatMessage( "message", to, from, text ) => {
+            for( connections <- ask( connectionActor, GetConnectionsExclude( from ) ).mapTo[ Iterable[ ( WebSocket, String ) ] ] )
+                sendActor ! BroadcastMessage( chatMessageFormat.write( message ).toString(), connections )
+        }
+
+        case _ => println( "Unknown message format: " + message )
+    }
+
+    def handleSystemMessage( message: SystemMessage, socket: WebSocket ) = message match {
+        case SystemMessage( "login", value ) => {
+            connectionActor ! OpenConnection( socket, value )
+            for ( connections <- ask( connectionActor, GetConnectionsExclude( value ) ).mapTo[ Iterable[ ( WebSocket, String ) ] ] )
+                sendActor ! BroadcastWelcomeMessage( value, connections )
+        }
+        case SystemMessage( "logout", value ) => {
+            connectionActor ! CloseConnection( socket )
+            for ( connections <- ask( connectionActor, GetConnectionsExclude( value ) ).mapTo[ Iterable[ ( WebSocket, String ) ] ] )
+                sendActor ! BroadcastExitMessage( value, connections )
+        }
+        case SystemMessage( "user-list", value ) => {
+            for { connections <- ask( connectionActor, GetConnectionsExclude( value ) ).mapTo[ Iterable[ ( WebSocket, String ) ] ]
+                  userConnections <- ask( connectionActor, GetUserConnection( value ) ).mapTo[ Iterable[ WebSocket ] ] } {
+                for ( userConnection <- userConnections )
+                    sendActor ! SendUserList( userConnection, connections.map( _._2 ) )
+            }
+        }
+
+        case _ => println( "Unknown message format: " + message )
     }
 }
