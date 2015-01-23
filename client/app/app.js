@@ -5,10 +5,11 @@ angular.module( 'chat', [] )
     $scope.userList = [];
     $scope.history = [];
     $scope.login = "";
+    $scope.room = 0;
 
     $scope.sendMessage = function() {
         if ( $scope.message ) {
-            var message = { action: "message", from: $scope.login, to: '', text: $scope.message };
+            var message = { action: "message", room: $scope.room, from: $scope.login, to: '', text: $scope.message };
 
             $scope.history.push( message );
             socket.send( JSON.stringify( message ) );
@@ -26,13 +27,12 @@ angular.module( 'chat', [] )
 
     // private functions
     var initWebSocket = function( login ) {
-        socket = new WebSocket( "ws://192.168.0.59:6696/chat" );
+        socket = new WebSocket( "ws://127.0.0.1:6696/chat" );
         socket.onopen = function() {
-            socket.send( JSON.stringify( { action: "login", value: $scope.login } ) );
-            socket.send( JSON.stringify( { action: "user-list", value: $scope.login } ) );
+            socket.send( JSON.stringify( { action: "login", room: $scope.room, value: $scope.login } ) );
+            socket.send( JSON.stringify( { action: "user-list", room: $scope.room, value: $scope.login } ) );
 
             $scope.$apply( function() {
-                $scope.history.push( { from: '***', text: 'Welcome, ' + login } );
                 $scope.isAuthenticated = true;
             } );
         };
@@ -50,7 +50,10 @@ angular.module( 'chat', [] )
                 var message = JSON.parse( event.data );
                 switch ( message.action ) {
                     case "login":
-                        $scope.history.push( { from: '***', text: message.value + ' has join to chat' } );
+                        if ( message.value !== $scope.login )
+                            $scope.history.push( { from: '***', text: message.value + ' has join to chat' } );
+                        else
+                            $scope.history.push( { from: '***', text: "Welcome, " + message.value } );
                         $scope.userList.push( message.value );
                     break;
                     case "logout":
@@ -66,7 +69,8 @@ angular.module( 'chat', [] )
                         $scope.userList = message.value;
                     break;
                     case "message":
-                        $scope.history.push( { from: message.from, to: message.to, text: message.text } );
+                        if ( message.from !== $scope.login )
+                            $scope.history.push( { from: message.from, to: message.to, text: message.text } );
                     break;
                 }
             } );

@@ -8,7 +8,7 @@ module.exports = function( grunt ) {
             'dev': {
                 root: 'app/',
                 port: '8090',
-                host: '192.168.0.59',
+                host: '127.0.0.1',
                 showDir: false,
                 ext: 'html'
             }
