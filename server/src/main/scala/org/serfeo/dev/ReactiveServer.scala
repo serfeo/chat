@@ -40,7 +40,6 @@ class ReactiveServer( val port: Int ) extends WebSocketServer( new InetSocketAdd
             getActor( ws ) match {
                 case Some( actor ) => actor ! ReactiveServer.Close( ws, code, reason, external )
                 case None => ws.close( CloseFrame.REFUSE )
-
             }
         }
     }

@@ -48,30 +48,34 @@ angular.module( 'chat', [] )
         socket.onmessage = function( event ) {
             $scope.$apply( function() {
                 var message = JSON.parse( event.data );
-                switch ( message.action ) {
-                    case "login":
-                        if ( message.value !== $scope.login )
-                            $scope.history.push( { from: '***', text: message.value + ' has join to chat' } );
-                        else
-                            $scope.history.push( { from: '***', text: "Welcome, " + message.value } );
-                        $scope.userList.push( message.value );
-                    break;
-                    case "logout":
-                        $scope.history.push( { from: '***', text: message.value + ' has left from chat' } );
-                        for ( var i = 0; i < $scope.userList.length; i++ ) {
-                            if ( $scope.userList[ i ] === message.value ) {
-                                $scope.userList.splice( i, 1 );
-                                break;
+                if ( message.errorType === "LOGIN_IN_USE" ) {
+                    $scope.history.push( { from: '***', text: "Login [ " + $scope.login + ' ] already in use. Please, choose other login.' } );
+                } else {
+                    switch ( message.action ) {
+                        case "login":
+                            if ( message.value !== $scope.login )
+                                $scope.history.push( { from: '***', text: message.value + ' has join to chat' } );
+                            else
+                                $scope.history.push( { from: '***', text: "Welcome, " + message.value } );
+                            $scope.userList.push( message.value );
+                        break;
+                        case "logout":
+                            $scope.history.push( { from: '***', text: message.value + ' has left from chat' } );
+                            for ( var i = 0; i < $scope.userList.length; i++ ) {
+                                if ( $scope.userList[ i ] === message.value ) {
+                                    $scope.userList.splice( i, 1 );
+                                    break;
+                                }
                             }
-                        }
-                    break;
-                    case "user-list":
-                        $scope.userList = message.value;
-                    break;
-                    case "message":
-                        if ( message.from !== $scope.login )
-                            $scope.history.push( { from: message.from, to: message.to, text: message.text } );
-                    break;
+                        break;
+                        case "user-list":
+                            $scope.userList = message.value;
+                        break;
+                        case "message":
+                            if ( message.from !== $scope.login )
+                                $scope.history.push( { from: message.from, to: message.to, text: message.text } );
+                        break;
+                    }
                 }
             } );
         };

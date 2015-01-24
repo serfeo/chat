@@ -72,10 +72,17 @@ class ChatActor extends Actor {
 
     def handleSystemMessage( message: SystemMessage, socket: WebSocket ) = message match {
         case SystemMessage( "login", room, value ) => {
-            userManager ! login( value, socket )
-            for { usr <- ask( userManager, getUserByLogin( value ) ).mapTo[ Option[ User ] ]
-                  users <- ask( userManager, getUsersByRoom( room ) ).mapTo[ List[ User ] ] }
-                for ( user <- usr ) sendActor ! BroadcastWelcomeMessage( user, room, users )
+            for ( usr <- ask( userManager, getUserByLogin( value ) ).mapTo[ Option[ User ] ] )
+                usr match {
+                    case None => {
+                        userManager ! login( value, socket )
+                        for { users <- ask( userManager, getUsersByRoom( room ) ).mapTo[ List[ User ] ] }
+                            for ( user <- usr ) sendActor ! BroadcastWelcomeMessage( user, room, users )
+                    }
+                    case Some( user ) =>
+                        sendActor ! SendLoginErrorMessage( socket )
+                }
+
         }
 
         case SystemMessage( "logout", room, value ) => {

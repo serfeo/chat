@@ -1,8 +1,11 @@
 package org.serfeo.dev.actors
 
 import akka.actor.Actor
-import org.serfeo.dev.actors.SendActor.SendUserList
+import org.java_websocket.WebSocket
+import org.java_websocket.framing.CloseFrame
+import org.serfeo.dev.actors.SendActor.{SendLoginErrorMessage, SendUserList}
 import org.serfeo.dev.actors.UsersManager.User
+import spray.json.DefaultJsonProtocol
 
 object SendActor {
     sealed trait SendEvent
@@ -11,11 +14,19 @@ object SendActor {
     case class BroadcastExitMessage( usr: User, room: Int, users : List[ User ] ) extends SendEvent
     case class BroadcastMessage( msg: String, room: Int, users : List[ User ] ) extends SendEvent
     case class SendUserList( usr : User, room: Int, users: List[ User ] ) extends SendEvent
+
+    case class SendLoginErrorMessage( socket: WebSocket )
+    case class LoginErrorMessage( errorType: String )
+
+    object SendActorJsonProtocol extends DefaultJsonProtocol {
+        implicit val loginErrorMessageFormat = jsonFormat( LoginErrorMessage, "errorType" )
+    }
 }
 
 class SendActor extends Actor {
     import org.serfeo.dev.actors.ChatActor.{SystemMessage,SystemListMessage,ChatMessageJsonFormat}
-    import org.serfeo.dev.actors.SendActor.{BroadcastWelcomeMessage,BroadcastExitMessage,BroadcastMessage}
+    import org.serfeo.dev.actors.SendActor._
+    import org.serfeo.dev.actors.SendActor.SendActorJsonProtocol.loginErrorMessageFormat
 
     def receive = {
         case m: BroadcastWelcomeMessage => {
@@ -32,6 +43,10 @@ class SendActor extends Actor {
         case m: SendUserList => {
             val message = ChatMessageJsonFormat.systemListMessageFormat.write( SystemListMessage( "user-list", m.room, m.users.map( _.login ) ) ).toString()
             sendMessages( message, List( m.usr ) )
+        }
+        case m: SendLoginErrorMessage => {
+            m.socket.send( loginErrorMessageFormat.write( LoginErrorMessage( "LOGIN_IN_USE" ) ).toString )
+            m.socket.close( CloseFrame.REFUSE )
         }
     }
 
