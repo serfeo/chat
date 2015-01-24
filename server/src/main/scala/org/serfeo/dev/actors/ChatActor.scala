@@ -76,7 +76,8 @@ class ChatActor extends Actor {
                 usr match {
                     case None => {
                         userManager ! login( value, socket )
-                        for { users <- ask( userManager, getUsersByRoom( room ) ).mapTo[ List[ User ] ] }
+                        for { users <- ask( userManager, getUsersByRoom( room ) ).mapTo[ List[ User ] ]
+                              usr <- ask( userManager, getUserByLogin( value ) ).mapTo[ Option[ User ] ] }
                             for ( user <- usr ) sendActor ! BroadcastWelcomeMessage( user, room, users )
                     }
                     case Some( user ) =>

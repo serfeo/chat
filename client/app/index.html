@@ -26,8 +26,9 @@
                 </td>
             <tr class='chat'>
                 <td>
-                    <div class='body'>
+                    <div class='body' chat-auto-scroll>
                         <div class='message' ng-repeat='message in history'>
+                            <span>{{::getCurrentTime() | date : "HH:mm:ss" }}</span>
                             <span>[ {{message.from}}</span>
                             <span ng-show='message.to'>to {{message.to}}</span>
                             <span>]</span>

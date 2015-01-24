@@ -22,6 +22,10 @@ angular.module( 'chat', [] )
         initWebSocket( $scope.login )
     }
 
+    $scope.getCurrentTime = function() {
+        return ( new Date() ).getTime()
+    }
+
     // private variables
     var socket;
 
