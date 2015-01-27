@@ -3,6 +3,7 @@ package org.serfeo.dev.actors
 import akka.actor.Actor
 import org.java_websocket.WebSocket
 import scala.collection.mutable.{ListBuffer, Set}
+import scala.util.Random
 
 object UsersManager {
     case class User( login: String, socket: WebSocket, rooms: Set[ Int ] ) {
@@ -16,6 +17,8 @@ object UsersManager {
 
     case class getUsersByRoom( room: Int )
     case class getUserByLogin( login: String )
+
+    case class createNewPrivateRoom( login1: String, login2: String )
 }
 
 class UsersManager extends Actor {
@@ -48,5 +51,17 @@ class UsersManager extends Actor {
         case m: getUsersByRoom => sender ! ( users.filter( _.rooms.contains( m.room ) ).toList )
 
         case m: getUserByLogin => sender ! users.find( _.login == m.login )
+
+        case m: createNewPrivateRoom => {
+            val room = Random.nextInt();
+
+            for { usr1 <- users.find( _.login == m.login1 )
+                  usr2 <- users.find( _.login == m.login2 ) } {
+                usr1.rooms += room
+                usr2.rooms += room
+
+                sender ! PrivateRoomStarting( "start-private", room, usr1, usr2 )
+            }
+        }
     }
 }

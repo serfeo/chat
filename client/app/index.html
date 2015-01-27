@@ -22,12 +22,12 @@
         <tbody>
             <tr class='header'>
                 <td colspan='2'>
-                    HEADER
+                    <span ng-repeat='room in rooms' ng-click='changeRoom( room.id )'>{{room.title}}</span>
                 </td>
             <tr class='chat'>
                 <td>
                     <div class='body' chat-auto-scroll>
-                        <div class='message' ng-repeat='message in history'>
+                        <div class='message' ng-repeat='message in history[ room ]'>
                             <span>{{::getCurrentTime() | date : "HH:mm:ss" }}</span>
                             <span>[ {{message.from}}</span>
                             <span ng-show='message.to'>to {{message.to}}</span>
@@ -37,7 +37,7 @@
                     </div>
                 <td class='users'>
                     <div class='message' ng-repeat='user in userList'>
-                        <span>{{user}}</span>
+                        <span ng-click='startPrivateRoom( user )'>{{user}}</span>
                     </div>
                 </td>
             <tr class='footer'>

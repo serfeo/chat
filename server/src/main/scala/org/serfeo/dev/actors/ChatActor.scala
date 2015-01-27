@@ -10,16 +10,22 @@ import spray.json._
 import scala.concurrent.duration._
 
 object ChatActor {
+    import org.serfeo.dev.actors.UsersManager.User
+
     case class TypeMessage( action: String )
     case class ChatMessage( action: String, room: Int, to: String, from: String, text: String )
     case class SystemMessage( action: String, room: Int, value: String )
     case class SystemListMessage( action: String, room: Int, value: Iterable[ String ] )
 
+    case class StartPrivateRoomMessage( action: String, room: Int, user1: String, user2: String )
+    case class PrivateRoomStarting( action: String, room: Int, user1: User, user2: User )
+
     object ChatMessageJsonFormat extends DefaultJsonProtocol {
-        implicit val typeMessageFormat = jsonFormat( TypeMessage, "action" )
-        implicit val chatMessageFormat = jsonFormat( ChatMessage, "action", "room", "to", "from", "text" )
-        implicit val systemMessageFormat = jsonFormat( SystemMessage, "action", "room", "value" )
-        implicit val systemListMessageFormat = jsonFormat( SystemListMessage, "action", "room", "value" )
+        implicit val typeMessageFormat = jsonFormat1( TypeMessage )
+        implicit val chatMessageFormat = jsonFormat5( ChatMessage )
+        implicit val systemMessageFormat = jsonFormat3( SystemMessage )
+        implicit val systemListMessageFormat = jsonFormat3( SystemListMessage )
+        implicit val startPrivateRoomMessageFormat = jsonFormat4( StartPrivateRoomMessage )
     }
 
     val defaultRoom = 0;
@@ -54,11 +60,23 @@ class ChatActor extends Actor {
         case m: Message => {
             JsonParser( m.msg ).convertTo[ TypeMessage ] match {
                 case TypeMessage( "message" ) => handleChatMessage( JsonParser( m.msg ).convertTo[ ChatMessage ] );
+                case TypeMessage ( "start-private" ) => handlePrivateRoomMessage( JsonParser( m.msg ).convertTo[ StartPrivateRoomMessage ] );
                 case _ => handleSystemMessage( JsonParser( m.msg ).convertTo[ SystemMessage ], m.ws )
             }
         }
 
         case _ => println( "Unknown message format in ChatActor receive" )
+    }
+
+    def handlePrivateRoomMessage( message: StartPrivateRoomMessage ) = message match {
+        case StartPrivateRoomMessage( "start-private", room, user1, user2 ) => {
+            for ( startPrivateRoom <- ask( userManager, createNewPrivateRoom( user1, user2 ) ).mapTo[ PrivateRoomStarting ] ) {
+                val msg = startPrivateRoomMessageFormat.write( StartPrivateRoomMessage( "start-private", startPrivateRoom.room, startPrivateRoom.user1.login, startPrivateRoom.user2.login ) ).toString
+                sendActor ! BroadcastMessage( msg, defaultRoom, List( startPrivateRoom.user1, startPrivateRoom.user2 ) )
+            }
+        }
+
+        case _ => println( "Unknown message format: " + message )
     }
 
     def handleChatMessage( message: ChatMessage ) = message match {
